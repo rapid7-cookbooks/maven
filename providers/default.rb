@@ -29,8 +29,8 @@ def whyrun_supported?
   true
 end
 
-def get_artifact_file_name(new_resource)
-  if new_resource.action == 'put'
+def get_artifact_file_name(action, new_resource)
+  if action == 'put'
     artifact_file_name = "#{new_resource.name}.#{new_resource.packaging}"
   else
     artifact_file_name = if new_resource.classifier.nil?
@@ -56,8 +56,8 @@ def create_command_string(artifact_file, new_resource)
   %Q{mvn #{plugin} #{group_id} #{artifact_id} #{version} #{packaging} #{classifier} #{dest} #{repos} #{transitive}}
 end
 
-def get_mvn_artifact(new_resource)
-  artifact_file_name = get_artifact_file_name(new_resource)
+def get_mvn_artifact(action, new_resource)
+  artifact_file_name = get_artifact_file_name(action, new_resource)
 
   Dir.mktmpdir('chef_maven_lwrp') do |tmp_dir|
     tmp_file = ::File.join(tmp_dir, artifact_file_name)
@@ -65,7 +65,7 @@ def get_mvn_artifact(new_resource)
     dest_file = ::File.join(new_resource.dest, artifact_file_name)
 
     unless ::File.exists?(dest_file) && checksum(tmp_file) == checksum(dest_file)
-      converge_by "#{new_resource.action.capitalize} #{new_resource}" do
+      converge_by "#{action.capitalize} #{new_resource}" do
         directory new_resource.dest do
           recursive true
           mode '0755'
@@ -84,9 +84,9 @@ def get_mvn_artifact(new_resource)
 end
 
 action :install do
-  get_mvn_artifact(new_resource)
+  get_mvn_artifact('install', new_resource)
 end
 
 action :put do
-  get_mvn_artifact(new_resource)
+  get_mvn_artifact('put', new_resource)
 end
